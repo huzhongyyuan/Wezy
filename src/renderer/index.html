@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<title>Wezy</title>
+<link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="drag brand"><span class="logo">◆</span> Wezy</div>
+
+    <section class="panel link-panel">
+      <div class="panel-head">
+        <span>链路状态</span>
+        <button class="ghost small" id="btn-diag">重新检测</button>
+      </div>
+      <ol class="segments" id="segments">
+        <li data-k="local"><i></i><b>本机</b><span>检测中…</span></li>
+        <li data-k="account"><i></i><b>账号</b><span>检测中…</span></li>
+        <li data-k="network"><i></i><b>网络</b><span>检测中…</span></li>
+        <li data-k="exit"><i></i><b>出口</b><span>检测中…</span></li>
+      </ol>
+      <div class="verdict" id="verdict">正在检测…</div>
+      <button class="profile-chip" id="profile-chip" title="切换接入配置">接入：<b id="profile-name">官方账号</b> <span>›</span></button>
+    </section>
+
+    <section class="panel grow">
+      <div class="panel-head">
+        <span>项目</span>
+        <div class="tab-toggle">
+          <button class="toggle-btn active" data-kind="claude">Claude</button>
+          <button class="toggle-btn" data-kind="codex">Codex</button>
+        </div>
+      </div>
+      <ul class="projects" id="projects"></ul>
+      <div class="empty" id="projects-empty">还没有项目。点“新建会话”选一个代码目录。</div>
+      <div class="panel-head codex-head" style="display:none"><span>Codex</span><span><button class="ghost small" id="btn-cx-import" title="立即同步官方 Codex 会话">↻ 同步</button> <button class="ghost small" id="btn-cx-add">＋ 新建</button></span></div>
+      <div id="cx-sync-controls" style="display:none"><button class="ghost small" id="btn-cx-archived">查看已归档</button><small id="cx-sync-status" title="名称、置顶、归档每 15 秒跟随官方；置顶请在官方应用操作。"></small></div>
+      <ul class="projects" id="cx-projects" style="display:none"></ul>
+      <div class="empty" id="cx-empty" style="display:none">当前列表没有 Codex 会话。</div>
+      <div class="panel-head" style="margin-top:8px"><span><button class="ghost small" id="btn-import" title="导入 ~/.claude 里已有的 Claude Code 会话">⇣ 导入</button> <button class="ghost small" id="btn-add">＋ 新建会话</button></span></div>
+    </section>
+    </section>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-view="term">终端</button>
+      <button class="nav-btn" data-view="usage">用量</button>
+      <button class="nav-btn" data-view="access">接入</button>
+      <button class="nav-btn" data-view="diag">诊断</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <section class="view active" id="view-term">
+      <div class="split">
+        <div class="pane"><div class="tabs drag" id="tabs"></div><div class="pane-head">Claude <span id="pane-title-claude" class="muted"></span></div><div class="term-wrap" id="term-wrap"></div></div>
+        <div class="splitter" id="splitter" title="拖动调整高度，双击恢复一半一半"></div>
+        <div class="pane"><div class="tabs" id="tabs-codex"></div><div class="pane-head codex">Codex <span id="pane-title-codex" class="muted"></span></div><div class="term-wrap" id="term-wrap-codex"></div></div>
+      </div>
+      <div class="welcome" id="welcome">
+        <h1>选一个项目目录，开始用 Claude Code</h1>
+        <p>每个项目一个标签页。切走以后会话继续在后台跑。</p>
+        <button class="primary" id="btn-add2">＋ 新建会话</button>
+      </div>
+    </section>
+
+    <section class="view" id="view-usage">
+      <header class="view-head"><h2>用量</h2><button class="ghost small" id="btn-usage">刷新</button><span class="muted" id="usage-meta"></span></header>
+      <div class="team-card" id="team-card" hidden></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="chart-card"><div class="chart-title">近 14 天输出 tokens</div><div class="chart" id="chart"></div></div>
+      <div class="chart-card"><div class="chart-title">近 30 天按模型（输出 tokens）</div><table class="models" id="models"></table></div>
+      <p class="muted note">数据来自本机 ~/.claude/projects 下的会话日志，只在本地读取，不上传。订阅额度的官方剩余量以 claude.ai 设置页为准。</p>
+    </section>
+
+    <section class="view" id="view-access">
+      <header class="view-head"><h2>接入配置</h2></header>
+      <p class="muted note">选一个配置作为当前接入。切换后只影响新开的会话，已开的会话保持原样。</p>
+      <ul class="profiles" id="profiles"></ul>
+      <form class="card form" id="pform" autocomplete="off">
+        <div class="form-title" id="pform-title">添加团队网关</div>
+        <input type="hidden" id="pf-id">
+        <label>名称<input id="pf-name" placeholder="例如：公司网关"></label>
+        <label>网关地址<input id="pf-url" placeholder="https://gateway.example.com" required></label>
+        <label>成员令牌<input id="pf-token" type="password" placeholder="管理员发给你的成员令牌"></label>
+        <div class="form-row">
+          <button type="button" class="ghost" id="pf-test">测试连接</button>
+          <button type="submit" class="primary">保存</button>
+          <button type="button" class="ghost" id="pf-cancel" hidden>取消编辑</button>
+          <span class="form-msg" id="pf-msg"></span>
+        </div>
+      </form>
+      <p class="muted note">团队网关由公司在 Anthropic 支持的地区部署，使用公司自己的 API Key，只给授权成员使用。也可以填任意 Anthropic 兼容接口。令牌经系统钥匙串加密保存。</p>
+    </section>
+
+    <section class="view" id="view-diag">
+      <header class="view-head"><h2>诊断详情</h2><button class="ghost small" id="btn-copy">复制诊断报告</button></header>
+      <pre class="diag-json" id="diag-json">尚未检测</pre>
+    </section>
+  </main>
+</div>
+<script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+<script src="codex-sync.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

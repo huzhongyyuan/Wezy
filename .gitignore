@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+*.log
+*.pem
+*.key
+.codex-fixes/
+artifacts/
+tests/*results*.json
+tests/gui-tests.json
+tests/preview.jpg
+tests/scroll-fixture.html
+tests/*-tests.json
+tests/pin-preview.jpg
+dist-*/

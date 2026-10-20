@@ -1,0 +1,4 @@
+const {contextBridge}=require('electron');
+let state={projects:[{id:'c',cwd:'/tmp',name:'Claude preserved'}],openIds:[]};
+let rows=[{sessionId:'a',cwd:'/tmp',title:'置顶会话',pinned:true,archived:false,mtime:1},{sessionId:'b',cwd:'/tmp',title:'普通会话',pinned:false,archived:false,mtime:2},{sessionId:'z',cwd:'/tmp',title:'已归档会话',pinned:false,archived:true,mtime:3}];
+contextBridge.exposeInMainWorld('lane',{platform:'darwin',getState:async()=>state,setState:async s=>{state=s},listCodexSessions:async()=>rows,archiveCodexSession:async({sessionId,archived})=>{rows=rows.map(r=>r.sessionId===sessionId?{...r,archived}:r)},listProfiles:async()=>({active:'official',items:[{id:'official',name:'Fixture',type:'official'}]}),runDiagnostics:async()=>({segments:[],verdict:{ok:true,text:'Fixture',hint:''}}),sessionTitles:async()=>({}),onPtyData:()=>{},onPtyStatus:()=>{},onPtyExit:()=>{},ptyStatuses:async()=>({}),ptyList:async()=>[],teamMe:async()=>null});

@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
+const source=fs.readFileSync('src/main/main.js','utf8');
+const context={fs:{existsSync:()=>false}};vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function codexBin()'),source.indexOf("ipcMain.handle('pty:create'")),context);
+assert.equal(context.codexLaunch({},null).cmd,"'codex'");
+assert.equal(context.codexLaunch({},'abc-123').cmd,"'codex' resume 'abc-123'");
+assert(!/model_provider|--profile|--dangerously/.test(context.codexLaunch({},'abc').cmd));
+const pty=require('node-pty');
+const proc=pty.spawn('/bin/sh',['-c','printf WEZY_PTY_OK'],{cols:80,rows:24,cwd:process.cwd(),env:process.env});
+let output='';proc.onData(data=>output+=data);
+const timer=setTimeout(()=>{proc.kill();console.error('PTY timeout');process.exit(1)},5000);
+proc.onExit(({exitCode})=>{clearTimeout(timer);assert.equal(exitCode,0);assert(output.includes('WEZY_PTY_OK'));console.log(JSON.stringify({launchDefaults:true,resumeArgument:true,nativePty:true,electron:process.versions.electron,arch:process.arch}));});
